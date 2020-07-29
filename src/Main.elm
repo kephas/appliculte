@@ -25,6 +25,7 @@ type alias LoadedModel =
         { height : Int
         , width : Int
         }
+    , layout : WL.Layout Msg
     }
 
 
@@ -49,7 +50,14 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( model, msg ) of
         ( Loading, GotViewport viewport ) ->
-            Loaded { window = { width = viewport.viewport.width |> round, height = viewport.viewport.height |> round } } |> withNoCmd
+            Loaded
+                { window = { width = viewport.viewport.width |> round, height = viewport.viewport.height |> round }
+                , layout = WL.init
+                }
+                |> withNoCmd
+
+        ( Loaded lmodel, ChangedSidebar mpart ) ->
+            Loaded { lmodel | layout = WL.activate mpart lmodel.layout } |> withNoCmd
 
         _ ->
             model |> withNoCmd
@@ -69,15 +77,17 @@ view model =
             WL.view (WSM.defaultPalette |> WSM.layout)
                 { window = loadedModel.window
                 , dialog = Nothing
-                , layout = WL.init
-                , title = Element.text "TITLE"
-                , menu = { selected = Nothing, options = [], onSelect = \_ -> Nothing }
+                , layout = loadedModel.layout
+                , title = Element.text "AppliCulte"
+                , menu = { selected = Nothing, options = List.map (\txt -> { text = txt, icon = Element.none }) [ "Nouveau projet", "Mes projets", "Recherche de textes" ], onSelect = \num -> Just <| SelectMenu num }
                 , search = Nothing
                 , actions = []
                 , onChangedSidebar = ChangedSidebar
                 }
             <|
-                Element.text "content ?"
+                Element.el [ Element.paddingXY 10 70, Element.height Element.fill, Element.width Element.fill ] <|
+                    Element.el [] <|
+                        Element.text "content goes here"
 
 
 
