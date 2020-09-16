@@ -29,7 +29,7 @@ init =
     , types = Set.empty
     , moments = Set.empty
     , times = Set.empty
-    , searchResults = Texts.texts
+    , searchResults = []
     }
 
 
@@ -42,7 +42,7 @@ types =
 
 
 moments =
-    [ "Entrée", "Parole d’accueil", "Parole de Dieu", "Repas du Seigneur", "Bénédiction d'envoi" ]
+    [ "Entrée", "Parole d’accueil", "Parole de Dieu", "Repas du Seigneur", "Parole d'action de grâce", "Bénédiction d'envoi" ]
 
 
 temps =
@@ -97,7 +97,7 @@ update msg model =
                 { model | times = Set.remove time model.times }
 
         DoSearch ->
-            model
+            { model | searchResults = getSearchResults model }
 
 
 
@@ -147,30 +147,64 @@ viewAdvancedSearch model =
         ]
 
 
+searchFilter : Model -> Texts.LiturgicText -> Bool
+searchFilter model text =
+    (Set.isEmpty model.sources || Set.member text.source model.sources)
+        && (Set.isEmpty model.types || Set.member text.type_ model.types)
+        && (Set.isEmpty model.moments || Set.member text.moment model.moments)
+        && (Set.isEmpty model.times
+                || (case text.time of
+                        Nothing ->
+                            False
+
+                        Just time ->
+                            Set.member time model.times
+                   )
+           )
+
+
+getSearchResults : Model -> List Texts.LiturgicText
+getSearchResults model =
+    List.filter (searchFilter model) Texts.texts
+
+
+maybeAppendLast : Maybe a -> List a -> List a
+maybeAppendLast mElement list =
+    case mElement of
+        Nothing ->
+            list
+
+        Just element ->
+            List.append list [ element ]
+
+
 viewOneResult : Texts.LiturgicText -> El.Element msg
 viewOneResult text =
-    card
-        [ case text.title of
-            Nothing ->
-                El.none
+    let
+        actualTitle =
+            case text.title of
+                Nothing ->
+                    El.none
 
-            Just title ->
-                My.h2 title
+                Just title ->
+                    My.h2 title
+    in
+    card
+        [ El.paragraph []
+            [ actualTitle
+            , El.text <| String.join ", " <| maybeAppendLast text.time <| [ text.source, text.type_, text.moment ]
+            ]
         , El.paragraph [] [ El.text text.content ]
         ]
 
 
 viewResults : Model -> El.Element msg
 viewResults model =
-    if model.searchResults == [] then
-        El.none
-
-    else
-        card
-            [ My.h1 "Résultats"
-            , El.column [ El.spacing 20 ] <|
-                List.map viewOneResult model.searchResults
-            ]
+    card
+        [ My.h1 <| "Résultats (" ++ (String.fromInt <| List.length model.searchResults) ++ ")"
+        , El.column [ El.spacing 20 ] <|
+            List.map viewOneResult model.searchResults
+        ]
 
 
 view : Model -> El.Element Msg
