@@ -15,6 +15,11 @@ h1 content =
     El.el FH.h1 <| El.text content
 
 
+h2 : String -> El.Element msg
+h2 content =
+    El.el FH.h2 <| El.text content
+
+
 primaryButton =
     Material.containedButton Material.defaultPalette
 
